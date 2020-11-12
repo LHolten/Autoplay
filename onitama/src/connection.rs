@@ -26,15 +26,25 @@ impl Connection {
     }
 
     pub fn recv(&mut self) -> WebSocketResult<LitamaMessage> {
-        let message = match self.client.recv_message()? {
-            // if it's a parse error then the server protocol has probably changed and retrying won't help
-            OwnedMessage::Text(text) => serde_json::from_str::<LitamaMessage>(&text).unwrap(),
-            OwnedMessage::Binary(bytes) => serde_json::from_slice::<LitamaMessage>(&bytes).unwrap(),
-            // another message that is not handled
-            // OwnedMessage::Ping(_) => panic!("todo"),
-            // OwnedMessage::Pong(_) => panic!("todo"),
-            // OwnedMessage::Close(_) => panic!("todo"),
-            msg => panic!("Received unexpected message: {:#?}", msg),
+        let message = loop {
+            match self.client.recv_message()? {
+                // if it's a parse error then the server protocol has probably changed and retrying won't help
+                OwnedMessage::Text(text) => {
+                    println!("{}", &text);
+                    break serde_json::from_str::<LitamaMessage>(&text).unwrap();
+                }
+                OwnedMessage::Binary(bytes) => {
+                    break serde_json::from_slice::<LitamaMessage>(&bytes).unwrap()
+                }
+                // another message that is not handled
+                OwnedMessage::Ping(data) => {
+                    println!("pong");
+                    self.client.send_message(&OwnedMessage::Pong(data)).unwrap()
+                }
+                // OwnedMessage::Pong(_) => panic!("todo"),
+                // OwnedMessage::Close(_) => panic!("todo"),
+                msg => panic!("Received unexpected message: {:#?}", msg),
+            }
         };
         Ok(message)
     }
@@ -54,13 +64,19 @@ impl Connection {
                             token: msg.token,
                             red: color_is_red(msg.color).unwrap(),
                         },
-                    )
+                    );
                 }
                 Ok(LitamaMessage::Error(msg)) => println!("Received error message: {}", msg.error),
                 Ok(msg) => println!("Received wrong message type {:#?}", msg),
                 Err(err) => println!("Error while receiving: {}", err),
             }
         }
+    }
+
+    pub fn spectate(&mut self, match_id: &str) {
+        self.send(&format!("spectate {}", match_id)).unwrap();
+        self.recv().unwrap(); // ignore response to spectate
+        self.client.recv_message().unwrap(); // ignore mallformed state message
     }
 
     pub fn join_match(&mut self, match_id: &str) -> Participant {

@@ -31,12 +31,14 @@ pub fn run() {
             let tup = conn.create_match();
             match_id = tup.0;
             p = tup.1;
-            println!("match id: {}", match_id);
+            println!("match id: https://git.io/onitama#{}", match_id);
         } else {
             // join a match
             match_id = input(&"match id:\n> ").unwrap().trim().to_string();
             p = conn.join_match(&match_id); // TODO ask again for match id if error
         }
+        conn.spectate(&match_id);
+        println!("waiting for state");
         let mut game = Game::from_state_msg(conn.recv_state());
         let (red, blue) = game.get_red_blue();
         println!(
@@ -46,7 +48,12 @@ pub fn run() {
         println!("You are playing as {}.", if p.red { "RED" } else { "BLUE" });
         while game.in_progress {
             println!("{}", game);
-            if let Color::Red = game.color {
+            let is_red = if let Color::Red = game.color {
+                true
+            } else {
+                false
+            };
+            if is_red == p.red {
                 let my_move = if manual {
                     get_move_input(&game)
                 } else {

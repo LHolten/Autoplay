@@ -236,7 +236,9 @@ impl Game {
         let mut blue = 0u32;
         let mut red_king = 0;
         let mut blue_king = 0;
+        println!("{}", state_msg.board);
         for (i, character) in (0..25).zip(state_msg.board.chars()) {
+            let i = i + 4 - 2 * (i % 5);
             match character {
                 '0' => {}
                 '1' => {

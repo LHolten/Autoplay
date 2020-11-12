@@ -96,7 +96,7 @@ pub fn translate_pos(pos: usize) -> String {
     let row = pos / 5;
     let col = pos % 5;
     [
-        "abcde".chars().nth(col).unwrap(),
+        "edcba".chars().nth(col).unwrap(),
         "12345".chars().nth(row).unwrap(),
     ]
     .iter()
@@ -107,7 +107,7 @@ pub fn translate_pos_back(pos: &str) -> Result<usize, String> {
     let mut chars = pos.chars();
     let first = chars.next().ok_or("Given pos is too short")?;
     let second = chars.next().ok_or("Given pos is too short")?;
-    let col = "abcde"
+    let col = "edcba"
         .find(first)
         .ok_or(format!("`{}` is an invalid column", first))?;
     let row = "12345"
@@ -124,10 +124,6 @@ pub fn move_to_command(my_move: &Move, match_id: &str, token: &str, game: &Game)
     // token
     command.push_str(token);
     command.push(' ');
-    // from:to
-    command.push_str(&translate_pos(my_move.from as usize));
-    command.push_str(&translate_pos(my_move.to as usize));
-    command.push(' ');
     // card
     let my_cards = game.my.cards;
     let card = if my_move.used_left_card {
@@ -136,5 +132,10 @@ pub fn move_to_command(my_move: &Move, match_id: &str, token: &str, game: &Game)
         &my_cards[1]
     };
     command.push_str(card.get_name());
+    command.push(' ');
+    // from:to
+    command.push_str(&translate_pos(my_move.from as usize));
+    command.push_str(&translate_pos(my_move.to as usize));
+    println!("{}", command);
     command
 }
